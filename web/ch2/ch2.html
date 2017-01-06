@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chapter2</title>
+    <meta charset="UTF-8">
+    <script src="../js/react.js"></script>
+    <script src="../js/react-dom.js"></script>
+</head>
+<body>
+<div id="app">
+
+</div>
+
+<script>
+    var myComponent = React.createClass({
+        render : function(){
+            //return React.DOM.span(null,"I'm so custom");
+            return React.DOM.span(null,"My name is" + this.props.name);
+        }
+    });
+
+    var myComponent_props = React.createClass({
+        propTypes : {
+            firstName : React.PropTypes.string.isRequired,
+            midName : React.PropTypes.string,
+            familyName : React.PropTypes.string.isRequired,
+            address : React.PropTypes.string,
+        },
+        getDefaultProps : function(){
+            return {
+                midName : "",
+                address : "N/A",
+            };
+        },
+
+        render : function(){
+            //return React.DOM.span(null,"I'm so custom");
+            return React.DOM.span(null,"My name is " + this.props.firstName + this.props.midName + this.props.familyName + this.props.address);
+        }
+    });
+
+
+
+    //믹스인 예제
+    var logMixIn = {
+        _log : function(methodName, args){
+            console.log(this.name + '::' + methodName , args);
+        },
+        componentWillUpdate : function(){
+            this._log('componentWillUpdate', arguments);
+        },
+
+        componentDidUpdate : function(oldProps,oldState){
+
+            this._log('componentDidUpdate',arguments);
+        },
+        //노드가 DOM에 삽입되기 전에 실행
+        componentWillMount : function(){
+            this._log('componentWillMount',arguments);
+        },
+        //컴포넌트가 DOM에서 제거되기 직전에 수행된다.
+        componentWillUnmount : function(){
+            this._log('componentWillUnmount',arguments);
+        },
+    }
+    /*ReactDOM.render(
+            //React.createElement(myComponent),
+            //React.createElement("span",null,"HELLO TOO"),
+            React.createElement(textAreaCounter,{defaultValue : "훈"}),
+            document.getElementById("app")
+    )*/
+    var textAreaCounter = React.createClass({
+        name : 'textAreaCounter',
+        mixins : [logMixIn],
+        propTypes : {
+            text : React.PropTypes.string,
+        },
+        getDefaultProps : function(){
+            return {
+                text : "",
+            };
+        },
+        getInitialState : function(){
+            return{text:this.props.text};
+        },
+        _textChange : function(ev){
+            this.setState({
+                        text : ev.target.value,
+                    }
+            );
+        },
+        componentWillReceiveProps : function(newProps){
+            this.setState({
+                text:newProps.defaultValue,});
+        },
+       /* _log : function(methodName,args){
+            console.log(methodName,args);
+        },
+        //컴포넌트의 render() 메소드가 호출되기 전 수행
+        componentWillUpdate : function(){
+            this._log('componentWillUpdate', arguments);
+        },
+        //컴포넌트의 render() 메소드를 수행하고 DOM의 새로운 변경사항이 적용된 후에 실행
+        /!*
+         * componentDidUpdate 에서는 componentWillUpdate 와 달리 변경전의 프로퍼티 및 상태 값과 함께 호출된것 을 볼수 있다
+         * *!/
+        componentDidUpdate : function(oldProps,oldState){
+
+            if(this.state.text.length > 5){
+                this.replaceState(oldState);
+            }
+            console.log('componentDidUpdate',arguments);
+        },
+        //노드가 DOM에 삽입되기 전에 실행
+        componentWillMount : function(){
+            console.log('componentWillMount',arguments);
+        },
+        //컴포넌트가 DOM에서 제거되기 직전에 수행된다.
+        componentWillUnmount : function(){
+            console.log('componentWillUnmount',arguments);
+        },*/
+        render : function(){
+            //return React.DOM.span(null,"I'm so custom");
+            return React.DOM.div(null,React.DOM.textarea({
+                value : this.state.text,
+                /*defaultValue : this.props.text,*/
+                onChange : this._textChange,
+            }), React.DOM.h3(null,this.state.text.length));
+        }
+    });
+    var myTextAreaCounter = ReactDOM.render(
+            React.createElement(textAreaCounter,{text : "Hello"}),
+            document.getElementById("app")
+    )
+
+
+
+</script>
+</body>
+</html>

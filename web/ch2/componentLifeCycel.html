@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Chapter2</title>
+    <meta charset="UTF-8">
+    <script src="../js/react.js"></script>
+    <script src="../js/react-dom.js"></script>
+</head>
+<body>
+<div id="app">
+
+</div>
+<script>
+    //믹스인 예제
+    var logMixIn = {
+        _log : function(methodName, args){
+            console.log(this.name + '::' + methodName , args);
+        },
+        componentWillUpdate : function(){
+            this._log('componentWillUpdate', arguments);
+        },
+
+        componentDidUpdate : function(oldProps,oldState){
+
+            this._log('componentDidUpdate',arguments);
+        },
+        //노드가 DOM에 삽입되기 전에 실행
+        componentWillMount : function(){
+            this._log('componentWillMount',arguments);
+        },
+        //컴포넌트가 DOM에서 제거되기 직전에 수행된다.
+        componentWillUnmount : function(){
+            this._log('componentWillUnmount',arguments);
+        }
+
+    }
+    var Counter = React.createClass({
+
+        name : 'Counter',
+        mixins : [logMixIn],
+        propTypes : {
+            count : React.PropTypes.number.isRequired,
+        },
+        render : function(){
+            console.log(this.name + '::render()');
+            return React.DOM.span(null,this.props.count)
+        }
+
+    });
+
+    var textAreaCounter = React.createClass({
+        name : 'textAreaCounter',
+        mixins : [logMixIn],
+        propTypes : {
+            text : React.PropTypes.string,
+        },
+        getDefaultProps : function(){
+            return {
+                text : "",
+            };
+        },
+        getInitialState : function(){
+            return{text:this.props.text};
+        },
+        _textChange : function(ev){
+            this.setState({
+                        text : ev.target.value,
+                    }
+            );
+        },
+        componentWillReceiveProps : function(newProps){
+            this.setState({
+                text:newProps.defaultValue,});
+        },
+
+        render : function(){
+            var counter = null;
+            console.log(this.name + '::render()');
+            if (this.state.text.length > 0){
+                counter = React.DOM.h3(null,React.createElement(Counter,{count : this.state.text.length}));
+            }
+            //return React.DOM.span(null,"I'm so custom");
+            return React.DOM.div(null,React.DOM.textarea({
+                value : this.state.text,
+                /*defaultValue : this.props.text,*/
+                onChange : this._textChange,
+            }), counter);
+        }
+    });
+
+    var myTextAreaCounter = ReactDOM.render(
+            React.createElement(textAreaCounter,{text : "Hello"}),
+            document.getElementById("app")
+    )
+</script>
+</body>
+</html>
