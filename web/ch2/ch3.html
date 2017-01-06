@@ -42,6 +42,7 @@
             ),
         },
         _sort : function(e) {
+            console.log(e);
             var column = e.target.cellIndex;
             var data = this.state.data.slice();
             var descending = this.state.sortby == column && !this.state.descending;
