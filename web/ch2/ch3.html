@@ -25,12 +25,52 @@
 
     var Excel = React.createClass({
         displayName : 'Excel',
+        componentDidMount: function() {
+            document.onkeydown = function(e) {
+                if (e.altKey && e.shiftKey && e.keyCode === 82) { // ALT+SHIFT+R(eplay)
+                    this._replay();
+                }
+            }.bind(this);
+        },
+        _replay: function() {
+            if (this._log.length === 0) {
+                console.warn('No state to replay yet');
+                return;
+            }
+            var idx = -1;
+            var interval = setInterval(function() {
+                idx++;
+                if (idx === this._log.length - 1) { // the end
+                    clearInterval(interval);
+                }
+                this.setState(this._log[idx]);
+            }.bind(this), 1000);
+        },
+        _download : function(format,ev){
+            var contents = format === 'json'?
+                    JSON.stringify(this.state.data) :
+                    this.state.data.reduce(function(result,row){
+                        return result
+                        + row.reduce(function(rowresult,cell,idx){
+                                    return rowresult
+                                    + '"' + cell.replace(/"/g, '""')
+                                    +'"'
+                                    +(idx < row.length -1 ? ',' : '');
+                                },'')
+                        +"\n";
+                    },'');
+            var URL = window.URL || window.webkitURL;
+            var blob = new Blob([contents],{type:'text/' + format});
+            ev.target.href = URL.createObjectURL(blob);
+            ev.target.download = 'data' + format;
+        },
         getInitialState : function (){
           return {
               data:this.props.initialData,
               sortby : null,
               descending : false,
               edit : null,
+              search : false,
           }
         },
         propTypes:{
@@ -40,6 +80,15 @@
                             React.PropTypes.string
                     )
             ),
+        },
+        _log: [],
+
+        _logSetState: function(newState) {
+            // remember the old state in a clone
+            this._log.push(JSON.parse(JSON.stringify(
+                    this._log.length === 0 ? this.state : newState
+            )));
+            this.setState(newState);
         },
         _sort : function(e) {
             console.log(e);
@@ -56,7 +105,7 @@
             });
         },
         _showEditor : function (e){
-            this.setState({edit:{
+            this._logSetState({edit:{
                 row: parseInt(e.target.dataset.row,10),
                 cell: e.target.cellIndex,
             }});
@@ -66,12 +115,84 @@
             var input = e.target.firstChild;
             var data = this.state.data.slice();
             data[this.state.edit.row][this.state.edit.cell] = input.value;
-            this.setState({
+            this._logSetState({
                 edit : null,
                 data : data,
             });
         },
+        _preSearchData: null,
+        _toggleSearch: function() {
+            if (this.state.search) {
+                this._logSetState({
+                    data: this._preSearchData,
+                    search: false,
+                });
+                this._preSearchData = null;
+            } else {
+                this._preSearchData = this.state.data;
+                this._logSetState({
+                    search: true,
+                });
+            }
+        },
+        _search:function(e){
+          var needle = e.target.value.toLowerCase();
+          if(!needle){
+                this._logSetState({data:this._preSearchData});
+                return;
+          }
+          var idx = e.target.dataset.idx;
+          var searchdata = this._preSearchData.filter(function(row){
+              return row[idx].toString().toLowerCase().indexOf(needle) > -1;
+          });
+          this._logSetState({data:searchdata});
+        },
         render : function(){
+            return(
+                    React.DOM.div(null,
+                        this._renderToolbar(),
+                        this._renderTable()
+                    )
+            );
+        },
+        _renderToolbar : function(){
+            return(
+                    React.DOM.div({
+                        className : 'toolbar'
+                    },React.DOM.button({
+                                onClick : this._toggleSearch,
+                                className : 'toolbar',
+
+                            },'search'),
+                            React.DOM.a({
+                                onClick : this._download.bind(this,'json'),
+                                href : 'data.json'
+                            },'Export JSON'),
+                            React.DOM.a({
+                                onClick : this._download.bind(this,'csv'),
+                                href : 'data.csv'
+                            },'Export CSV')
+                    )
+
+
+            );
+        },
+        _renderSearch : function(){
+            if(!this.state.search){
+                return null;
+            }
+            return(
+                    React.DOM.tr({
+                                onChange:this._search
+                            },this.props.headers.map(function(_ignore,idx){
+                                return React.DOM.td({key:idx},React.DOM.input({type:'text','data-idx' : idx,
+                                        })
+                                );
+                            })
+                    )
+            );
+        },
+        _renderTable : function(){
             return (
                     React.DOM.table(null,
                             React.DOM.thead({onClick: this._sort},
@@ -84,6 +205,7 @@
                                              },this)
                                     )
                             ),React.DOM.tbody({onDoubleClick:this._showEditor},
+                            this._renderSearch(),
                             this.state.data.map(function(row,rowidx){
                                 return(
                                     React.DOM.tr({key:rowidx},row.map(function(cell,idx){
